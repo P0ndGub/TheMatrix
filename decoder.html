@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Matrix</title>
+</head>
+<body>
+    <h2>การถอดรหัสเมทริกซ์รหัสลับ</h2>
+
+    <p>เมทริกซ์รหัสลับ ที่ต้องการจะถอดความ : </p>
+    <textarea id="matrixX" rows="3" cols="20"></textarea>
+
+    <p>เมทริกซ์สร้างรหัส (เมทริกซ์จตุรัสมิติ 2x2) : </p>
+    <textarea id="matrixM" rows="3" cols="20"></textarea>
+
+    <br><br>
+    <button onclick="decodeMessage()">ถอดรหัสข้อความ</button>
+
+    <h3>ผลลัพธ์ตัวเลข : </h3>
+    <pre id="resultNumbers"></pre>
+
+    <h3>ผลลัพธ์ข้อความ : </h3>
+    <pre id="resultText"></pre>
+
+    <script>
+        function parseMatrix(text) {
+            return text
+            .trim()
+            .split("\n")
+            .map(row => row.trim().split(/\s+/).map(Number));
+        }
+
+                // inverse function
+        function inverseMatrix(matrix) {
+            const n = matrix.length;
+            if (n !== 2) throw new Error("Matrix M ต้องเป็น 2×2 เท่านั้น");
+
+            const [[a, b], [c, d]] = matrix;
+            const det = a*d - b*c;
+            if (det === 0) throw new Error("Matrix M ไม่สามารถผกผันได้");
+
+            const invDet = 1 / det;
+            return [
+                [ d*invDet, -b*invDet],
+                [-c*invDet,  a*invDet]
+            ];
+        }
+
+
+
+        function multiplyMatrices(A, B) {
+            if (A[0].length !== B.length) {
+                throw new Error("มิติของเมทริกซ์ไม่เท่ากัน ไม่สามารถคูณได้");
+            }
+
+            const result = [];
+            for (let i = 0; i < A.length; i++) {
+                result[i] = [];
+                for (let j = 0; j < B[0].length; j++) {
+                    let sum = 0;
+                    for (let k = 0; k < B.length; k++) {
+                        sum += A[i][k] * B[k][j];
+                    }
+                    result[i][j] = sum;
+                }
+            }
+
+            return result;
+        }
+
+        // decode function
+        function decodeMessage() {
+            try {
+                const matrixX = parseMatrix(document.getElementById("matrixX").value);
+                const matrixM = parseMatrix(document.getElementById("matrixM").value);
+
+                if (matrixM.length !== 2 || matrixM[0].length !== 2) {
+                    throw new Error("เมทริกซ์สร้างรหัสต้องมีมิติเป็น 2x2 เท่านั้น")
+                }
+                if (matrixX.length !== 2) {
+                    throw new Error("เมทริกซ์ลับต้องมี 2 แถวเท่านั้น")
+                }
+
+                const invM = inverseMatrix(matrixM); // find inverse
+                const decodedNumbers = multiplyMatrices(invM, matrixX); //multiply inverse M and X
+
+                // show numeric result
+                document.getElementById("resultNumbers").textContent =
+                    decodedNumbers.map(row => row.map(x => x.toFixed(2)).join(" ")).join("\n");
+
+                //flatten 2xN into single array
+                const flatNumbers = decodedNumbers.flat();
+                //convert number to letter
+                const decodedText = NumbersToWord(flatNumbers);
+
+                //show result
+                document.getElementById("resultText").textContent = decodedText;
+
+
+            } catch (err) {
+                document.getElementById("resultNumbers").textContent = "Error : " + err.message;
+                document.getElementById("resultText").textContent = "";
+            }
+        }
+
+                function NumbersToWord(numbers) {
+            return numbers.map(n => {
+                n = Math.round(n); //round to nearest integer
+                if (n >= 1 && n <= 26) {
+                    return String.fromCharCode(n+64); //A=1 ,B=2
+                } else if (n == 27) {
+                    return " ";
+                } else if (n == 28) {
+                    return ".";
+                } else {
+                    return ""; // unknown number
+                }
+            }).join("");
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Matrix</title>
+</head>
+<body>
+    <h2>การสร้างเมทริกซ์รหัสลับ</h2>
+
+    <p>เมทริกซ์สร้างรหัส (เมทริกซ์จตุรัสมิติ 2x2) : </p>
+    <textarea id="matrixM" rows="3" cols="20"></textarea>
+    
+    <p>คำที่ต้องการจะทำให้เป็นรหัสลับ</p>
+    <input type="text" id="wordinput" placeholder="กรุณาใส่คำที่ต้องการจะทำให้เป็นรหัสลับ">
+    <button onclick="makeMatrix()">แปลงคำเป็นเมทริกซ์</button>
+
+    <p>เมทริกซ์ของคำที่ต้องการจะแปลงเป็นรหัสลับ</p>
+    <pre id="matrixE"></pre>
+
+    <p>เมทริกซ์รหัสลับ คือ</p>
+    <pre id="encoded"></pre>
+
+    <script>    
+        // convert word to number
+        function WordToNumbers(word) {
+            return word.split("").map(ch => {
+             if (/[A-Z]/i.test(ch)) {
+                 return ch.toUpperCase().charCodeAt(0) - 64;
+              } else if (ch === " ") {
+                 return 27;
+              } else if (ch === ".") {
+                  return 28;
+              } else {
+                  return 0;
+              }
+           });
+        }
+
+        // make number to matrix
+        function makeMatrix() {
+            const word = document.getElementById("wordinput").value;
+            const nums = WordToNumbers(word);
+
+            // ex. make E as 2 rows (vertically)
+            let E = [[],[]];
+
+            let index = 0;
+            for (const n of nums) {
+                const row = index % 2; //alternate between rows
+                E[row].push(n);
+                index++;
+            }
+            if (E[0].length > E[1].length) E[1].push(0); // odd number pair with 0
+
+            // display
+            document.getElementById("matrixE").textContent =
+                E.map(r => r.join(" ")).join("\n");
+
+        // multiply with encrypted matrix M
+        try {
+            const M = parseMatrixFromTextArea();    // get 2x2 encrypted matrix
+            const C = multiplyingMatrices(M, E);    // call the global function
+            document.getElementById("encoded").textContent =
+            C.map(r => r.join(" ")).join("\n");
+        } catch (err) {
+            document.getElementById("encoded").textContent = "Error: " + err.message;
+            }
+        }
+
+        // parse matrix M from textarea
+        function parseMatrixFromTextArea() {
+            const raw = document.getElementById("matrixM").value.trim();
+            const nums = raw.split(/\s+/).map(Number); // seperate with space
+            if (nums.length !==4) {
+                throw new Error("กรุณาใส่เลข 4 ตัวสำหรับเมทริกซ์จตุรัสมิติ 2x2 ");
+            }
+            // make 2x2 matrix
+            return [
+                [nums[0], nums[1]],
+                [nums[2], nums[3]]
+            ];
+        }
+
+
+        // click to solve for inverse
+        function showInverse() {
+            try {
+                const M = parseMatrixFromTextArea();
+                const MatrixInverse = inverseMatrix(M); // use function inverseMatrix from before
+                document.getElementById("outM").textContent =
+                MatrixInverse.map(r => r.map(x => x.toFixed(2)).join(" ")).join("\n");
+            } catch (err) {
+                document.getElementById("outM").textContent = err.message;
+            }
+        }
+
+
+
+        // multiplying matrix
+        function multiplyingMatrices(A, B) {
+            if (A[0].length !== B.length) {
+                throw new Error("มิติของเมทริกซ์ไม่เท่ากัน ไม่สามารถคูณได้");
+            }
+            let result = Array.from({length: A.length}, () => Array(B[0].length).fill(0));
+            for (let i = 0; i < A.length; i++) {
+                for (let j = 0; j < B[0].length; j++) {
+                    for (let k = 0; k < B.length; k++) {
+                        result[i][j] += A[i][k] * B[k][j]
+                    }
+                }
+            }
+            return result;
+        }
+
+    </script>
+</body>
+</html>
