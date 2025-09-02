@@ -1,3 +1,212 @@
+ HEAD
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matrix Encoder/Decoder</title>
+</head>
+<body>
+    <h2>การสร้างและถอดรหัสเมทริกซ์รหัสลับ</h2>
+
+    <!-- Encryption Section -->
+
+    <h3>สร้างรหัสลับ</h3>
+
+    <p>คำที่ต้องการทำรหัสลับ : </p>
+    <input type="text" id="wordinput" placeholder="กรอกคำที่ต้องการเข้ารหัส">
+    <button onclick="makeMatrix()">แปลงคำเป็นเมทริกซ์</button>
+
+     <h3>การสร้างรหัสลับ</h3>
+     <p>เมทริกซ์สร้างรหัส (2x2) : </p>
+     <textarea id="matrixM_enc" rows="2" cols="20"></textarea>
+
+     <p>เมทริกซ์ของคำ : </p>
+     <pre id="matrixE"></pre>
+
+     <p>เมทริกซ์รหัสลับ : </p>
+     <pre id="encoded"></pre>
+
+     <hr>
+
+     <!-- Decryption Section -->
+    
+    <h3>ถอดรหัสลับ</h3>
+    <p>เมทริกซ์รหัสลับที่ต้องการถอดรหัส : </p>
+    <textarea id="matrixX_dec" rows="3" cols="20"></textarea>
+
+    <p>เมทริกซ์สร้างรหัส (2x2) : </p>
+    <textarea id="matrixM_dec" rows="2" cols="20"></textarea>
+
+    <button onclick="decodeMessage()">ถอดรหัสข้อความ</button>
+
+    <h3>ผลลัพธ์ตัวเลข : </h3>
+    <pre id="resultNumbers"></pre>
+
+    <h3>ผลลัพธ์ข้อความ : </h3>
+    <pre id="resultText"></pre>
+
+    <script>
+        // inverse matrix
+        function inverseMatrix(matrix) {
+            const [[a, b], [c, d]] = matrix;
+            const det = a*d - b*c;
+            if (det === 0) throw new Error("Matrix M ไม่สามารถผกผันได้");
+            const invDet = 1 / det;
+            return [
+                [ d*invDet, -b*invDet],
+                [-c*invDet,  a*invDet]
+            ];
+        }
+
+        function multiplyMatrices(A, B) {
+            if (A[0].length !== B.length) throw new Error("มิติของเมทริกซ์ไม่ตรงกัน");
+            let result = Array.from({length: A.length}, () => Array(B[0].length).fill(0));
+            for (let i = 0; i < A.length; i++) {
+                for (let j = 0; j < B[0].length; j++) {
+                    for (let k = 0; k < B.length; k++) {
+                        result[i][j] += A[i][k] * B[k][j];
+                    }
+                }
+            }
+            return result;
+        }
+
+         function NumbersToWord(numbers) {
+            return numbers.map(n => {
+                n = Math.round(n);
+                if (n >=1 && n <=26) return String.fromCharCode(n+64);
+                else if (n==27) return " ";
+                else if (n==28) return ".";
+                else if (n==29) return "!";
+                else if (n==30) return "@";
+                else if (n==31) return "#";
+                else if (n==32) return "/";
+                else if (n==33) return "%";
+                else if (n==34) return "^";
+                else if (n==35) return "&";
+                else if (n==36) return "*";
+                else if (n==37) return "(";
+                else if (n==38) return ")";
+                else if (n==39) return "=";
+                else return "";
+            }).join("");
+        }
+
+             function WordToNumbers(word) {
+            return word.split("").map(ch => {
+                if (/[A-Z]/i.test(ch)) return ch.toUpperCase().charCodeAt(0)-64;
+                else if (ch===" ") return 27;
+                else if (ch===".") return 28;
+                else if (ch==="!") return 29;
+                else if (ch==="@") return 30;
+                else if (ch==="#") return 31;
+                else if (ch==="/") return 32;
+                else if (ch==="%") return 33;
+                else if (ch==="^") return 34;
+                else if (ch==="&") return 35;
+                else if (ch==="*") return 36;
+                else if (ch==="(") return 37;
+                else if (ch===")") return 38;
+                else if (ch==="=") return 39;
+                else return 0;
+            });
+        }
+
+                function parseMatrixFromTextarea(id) {
+            const raw = document.getElementById(id).value.trim();
+            const nums = raw.split(/\s+/).map(Number);
+            if (nums.length !==4) throw new Error("กรุณาใส่เลข 4 ตัวสำหรับเมทริกซ์ 2x2");
+            return [
+                [nums[0], nums[1]],
+                [nums[2], nums[3]]
+            ];
+        }
+
+        function parseMatrixSingleRow(id) {
+    const raw = document.getElementById(id).value.trim();
+    const nums = raw.split(/\s+/).map(Number);
+    if (nums.length !== 4) throw new Error("กรุณาใส่เลข 4 ตัวสำหรับเมทริกซ์ 2x2");
+    return [
+        [nums[0], nums[1]],
+        [nums[2], nums[3]]
+    ];
+}
+
+                function parseMatrix(text) {
+            return text.trim().split("\n").map(row => row.trim().split(/\s+/).map(Number));
+        }
+
+        // Encryption Part
+               function makeMatrix() {
+                    const word = document.getElementById("wordinput").value;
+                    const nums = WordToNumbers(word);
+
+                // Build 2xN matrix column-wise
+                let E = [[], []];
+                for (let i = 0; i < nums.length; i++) {
+                    if (i % 2 === 0) {
+                    E[0].push(nums[i]);
+                    } else {
+                    E[1].push(nums[i]);
+                    }
+                }
+        // pad last element if needed
+        if (E[0].length > E[1].length) E[1].push(0);
+
+        document.getElementById("matrixE").textContent =
+            E.map(r => r.join(" ")).join("\n");
+
+        try {
+            const M = parseMatrixSingleRow("matrixM_enc");
+            const C = multiplyMatrices(M, E);
+            document.getElementById("encoded").textContent =
+                C.map(r => r.join(" ")).join("\n");
+        } catch(err) {
+            document.getElementById("encoded").textContent = "Error: " + err.message;
+        }
+    }
+
+                // Decryption Part
+                        function decodeMessage() {
+                        try {
+                            // parse matrix X
+                            const matrixX = parseMatrix(document.getElementById("matrixX_dec").value);
+
+                            // parse matrix M
+                            const M = parseMatrixSingleRow("matrixM_dec");
+
+                            // compute inverse of M
+                            const invM = inverseMatrix(M);
+
+                            // multiply 
+                            const decodedNumbers = multiplyMatrices(invM, matrixX);
+
+                            // flatten column-wise 
+                            let flatNumbers = [];
+                            for (let i = 0; i < decodedNumbers[0].length; i++) {
+                                flatNumbers.push(decodedNumbers[0][i]); // top row
+                                flatNumbers.push(decodedNumbers[1][i]); // bottom row
+                        }
+
+                        // remove trailing 
+                        if (flatNumbers[flatNumbers.length - 1] === 0) flatNumbers.pop();
+
+                        // show numeric result
+                        document.getElementById("resultNumbers").textContent =
+                        decodedNumbers.map(r => r.map(x => Math.round(x)).join(" ")).join("\n");
+
+                        // convert number to text
+                        document.getElementById("resultText").textContent =
+                        NumbersToWord(flatNumbers);
+
+                }   catch (err) {
+                    document.getElementById("resultNumbers").textContent = "Error: " + err.message;
+                    document.getElementById("resultText").textContent = "";
+                }
+            }
+     </script>
+</body>
 <!DOCTYPE html>
 <html lang="en">
 <head>
